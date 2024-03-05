@@ -1,0 +1,2 @@
+10.567 s
+Intel(R) Xeon(R) E5520 @ 2.27GHz

@@ -1,0 +1,4 @@
+1.865 32
+1.743 32
+AMD Opteron(tm) Processor 6282 SE
+1 2 4 8 16 32
