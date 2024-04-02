@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
-#include <pthread.h>
+#include <omp.h>
 #include <sys/time.h>
 
 #define epsilon 1e-3
@@ -9,6 +9,8 @@ double G;
 double dt;
 int N;
 int n_threads;
+double* Fx;
+double* Fy;
 int n_threads;
 
 typedef struct {
@@ -20,39 +22,32 @@ typedef struct {
     double brightness;
 } Particle;
 
-typedef struct{
-    Particle *p;
-    int start;
-    int stop;
-} Data;
-
-
-void* step(void* data){
-    Data *d = (Data *) data;
-    for (int i = d->start; i < d->stop; i++) {
-        double mg = -G * d->p[i].mass;
+void* step(Particle* p){
+    #pragma omp parallel for num_threads(n_threads)
+    for (int i = 0; i < N; i++) {
+        double mg = -G * p[i].mass;
         double tempFx = 0;
         double tempFy = 0;
         for (int j = 0; j < i; j++) {
-            double rx = d->p[i].pos_x - d->p[j].pos_x; 
-            double ry = d->p[i].pos_y - d->p[j].pos_y;
+            double rx = p[i].pos_x - p[j].pos_x; 
+            double ry = p[i].pos_y - p[j].pos_y;
             double r = sqrt(rx * rx + ry * ry) + epsilon;
-            double unit = mg*(d->p[j].mass) / (r*r*r);
+            double unit = mg*(p[j].mass) / (r*r*r);
 
             tempFx += rx * unit;
             tempFy += ry * unit;
         }
         for (int j = i+1; j < N; j++) {
-            double rx = d->p[i].pos_x - d->p[j].pos_x; 
-            double ry = d->p[i].pos_y - d->p[j].pos_y;
+            double rx = p[i].pos_x - p[j].pos_x; 
+            double ry = p[i].pos_y - p[j].pos_y;
             double r = sqrt(rx * rx + ry * ry) + epsilon;
-            double unit = mg*(d->p[j].mass) / (r*r*r);
+            double unit = mg*(p[j].mass) / (r*r*r);
 
             tempFx += rx * unit;
             tempFy += ry * unit;
         }
-        d->p[i].velocity_x += dt*tempFx/(d->p[i].mass);
-        d->p[i].velocity_y += dt*tempFy/(d->p[i].mass);
+        Fx[i] = tempFx;
+        Fy[i] = tempFy;
     }
     return NULL;
 }
@@ -75,55 +70,46 @@ int main(int argc, char *argv[]){
     Particle* particles = malloc(sizeof(Particle)*N);
     FILE *file;
     
-
     file = fopen(filename, "rb");
     if (file == NULL) {
         perror("Error opening file");
         return 1;
     }
 
+    
+
     size_t dummy = fread(particles, sizeof(Particle), N, file);
     
     dummy += 0; // again, annoying warning
     fclose(file);
 
-    Data* data = malloc(sizeof(Data)*n_threads);
+    printf("%f\n",particles[0].pos_x);
 
-    int chunk_size = N / n_threads;
-    int extra_particles = N % n_threads;
-    int start_index = 0;
-    for (int i = 0; i < n_threads; i++) {
-        data[i].p = particles;
+    Fx = malloc(sizeof(double)*N);
+    Fy = malloc(sizeof(double)*N);
 
-        int thread_chunk = chunk_size + (i < extra_particles ? 1 : 0);
-
-        data[i].start = start_index;
-        data[i].stop = start_index + thread_chunk;
-
-        start_index += thread_chunk;
-    }
-
-    pthread_t threads[n_threads];
     
     for(int i = 0; i<nsteps; i++){ 
-        
-        for (int j = 0; j < n_threads; j++)
+        for (int j = 0; j < N; j++)
         {
-            pthread_create(&threads[j], NULL, step, (void *) &data[j]);
+            Fx[j] = 0; //initialization
+            Fy[j] = 0;
         }
-        for (int j = 0; j < n_threads; j++)
+        step(particles);
+        for (int j = 0; j < N; j++) //test som fan
         {
-            pthread_join(threads[j], NULL);
-        }
-        for (int j = 0; j < N; j++) //need to update 
-        {
+            particles[j].velocity_x += dt*Fx[j]/(particles[j].mass);
+            particles[j].velocity_y += dt*Fy[j]/(particles[j].mass);
+
             particles[j].pos_x += dt*(particles[j].velocity_x);
             particles[j].pos_y += dt*(particles[j].velocity_y);
         }
         
     }
+    printf("%f\n",particles[0].pos_x);
 
-    free(data);
+    free(Fx);
+    free(Fy);
 
     FILE *outputFile; 
     outputFile = fopen("result.gal", "wb");
