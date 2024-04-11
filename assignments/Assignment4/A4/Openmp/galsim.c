@@ -46,8 +46,8 @@ void* step(Particle* p){
             tempFx += rx * unit;
             tempFy += ry * unit;
         }
-        Fx[i] = tempFx;
-        Fy[i] = tempFy;
+        Fx[i] = tempFx/p[i].mass;
+        Fy[i] = tempFy/p[i].mass;
     }
     return NULL;
 }
@@ -83,36 +83,38 @@ int main(int argc, char *argv[]){
     dummy += 0; // again, annoying warning
     fclose(file);
 
-    printf("%f\n",particles[0].pos_x);
-
     Fx = malloc(sizeof(double)*N);
     Fy = malloc(sizeof(double)*N);
 
-    
-    for(int i = 0; i<nsteps; i++){ 
-        for (int j = 0; j < N; j++)
-        {
-            Fx[j] = 0; //initialization
-            Fy[j] = 0;
+    const double dt2 = dt*dt/2;
+    double a_old[N][2];
+
+    step(particles);
+    for (int j = 0; j < N; j++){ // initialize acceleration for velocity verlet
+        Fx[j] = 0;
+        Fy[j] = 0;
+    }
+    for (int i = 0; i < nsteps; i++){
+        for (int j = 0; j < N; j++){
+            particles[j].pos_x += dt*particles[j].velocity_x+Fx[j]*dt2;
+            particles[j].pos_y += dt*particles[j].velocity_y+Fy[j]*dt2;
+            a_old[j][0] = Fx[j];
+            a_old[j][1] = Fy[j];
+            Fx[j] = 0; Fy[j] = 0;
         }
         step(particles);
-        for (int j = 0; j < N; j++) //test som fan
-        {
-            particles[j].velocity_x += dt*Fx[j]/(particles[j].mass);
-            particles[j].velocity_y += dt*Fy[j]/(particles[j].mass);
-
-            particles[j].pos_x += dt*(particles[j].velocity_x);
-            particles[j].pos_y += dt*(particles[j].velocity_y);
+        for (int j = 0; j < N; j++){
+            particles[j].velocity_x += dt*(Fx[j]+a_old[j][0])/2;
+            particles[j].velocity_y += dt*(Fy[j]+a_old[j][1])/2;
         }
         
     }
-    printf("%f\n",particles[0].pos_x);
 
     free(Fx);
     free(Fy);
 
     FILE *outputFile; 
-    outputFile = fopen("result.gal", "wb");
+    outputFile = fopen("reference.gal", "wb");
 
     if (outputFile == NULL) {
         perror("Error opening file");

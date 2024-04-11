@@ -31,7 +31,7 @@ Display *global_display_ptr;
 
 Window win;
 Pixmap pixmap;
-XEvent report;
+XEvent report; 
 GC gc;
 unsigned black, white;
 unsigned width, height;

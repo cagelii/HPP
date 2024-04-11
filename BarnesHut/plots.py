@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-dt = [1e-3, 1e-4, 1e-5, 1e-6, 1e-7]
-Tv = [0.034177410879, 0.000450119736, 0.000040668383, 0.000004015230, 0.000000364885]
-Te = [0.069, 0.00514, 0.000514, 0.000051, 0.0000046]
+dt = 1/(10**np.linspace(3,7,5))
+Tv = [0.033361531165, 0.000345575189, 0.000003457102, 0.000000034568, 0.000000000342]
+Te = [0.068535807586, 0.005896741670, 0.000590297078, 0.000058509004, 0.000005319101]
 fig, ax  = plt.subplots()
 slopeV = np.polyfit(np.log(dt), np.log(Tv), 1)[0]
 slopeE = np.polyfit(np.log(dt), np.log(Te), 1)[0]
@@ -15,7 +15,7 @@ ax.legend()
 fig.savefig("plot.png")
 
 N = np.array([100, 200, 300, 500, 1000, 2000, 3000])
-T = np.array([0.017786, 0.046375, 0.081239, 0.168263, 0.434840, 1.129324, 1.886747])
+T = np.array([0.047, 0.092, 0.143, 0.255, 0.626, 1.446, 2.365])
 fig, ax  = plt.subplots()
 slope1 = np.polyfit(np.log(N), np.log(N*np.log(N)), 1)[0]
 slope2 = np.polyfit(np.log(N), np.log(T), 1)[0]
