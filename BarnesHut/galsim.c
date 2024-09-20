@@ -5,6 +5,8 @@
 #include <sys/time.h>
 #include "graphics.h"
 
+//Solution to the n-body problem using the Barnes-Hut algorithm
+
 #define SYMPLECTIC_EULER 1 // 1 compiles symplectic euler time integration, 0 compiles velocity verlet
 const float circleColor=0;
 
